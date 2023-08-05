@@ -1,0 +1,42 @@
+name: Deploy to Dev and Main
+
+on:
+  push:
+    branches:
+      - main
+      - dev
+
+jobs:
+  deploy-to-dev:
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up SSH for Dev VPS
+        run: |
+          echo "$VPS_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H dev-vps-ip-address >> ~/.ssh/known_hosts
+
+      - name: Deploy to Dev VPS
+        run: rsync -avz --delete --exclude '.git/' --exclude 'vendor/' . user@dev-vps-ip-address:/var/www/html/
+
+  deploy-to-main:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Set up SSH for Main VPS
+        run: |
+          echo "$VPS_SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
+          chmod 600 ~/.ssh/id_rsa
+          ssh-keyscan -H main-vps-ip-address >> ~/.ssh/known_hosts
+
+      - name: Deploy to Main VPS
+        run: rsync -avz --delete --exclude '.git/' --exclude 'vendor/' . user@main-vps-ip-address:/var/www/html/
